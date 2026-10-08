@@ -1,0 +1,545 @@
+{
+  "name": "CRM Lead Automation - AI Demo",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "demo-hvac-leads",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "85821d3e-2a23-4c8c-8800-8ce6f52d7e5c",
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "97c8761c-d94c-43e3-a32b-9df4981ebefd",
+              "name": "name",
+              "value": "={{ $json.body.name }}",
+              "type": "string"
+            },
+            {
+              "id": "bc17fd7c-8f1c-4fda-8c30-a8ff80ac7d76",
+              "name": "phone",
+              "value": "={{ $json.body.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "e0f92b00-a13b-436f-a23b-e1a78b5c924f",
+              "name": "email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "ed4af5f8-7696-402d-9f03-c7867e66c63f",
+              "name": "source",
+              "value": "={{ $json.body.source }}",
+              "type": "string"
+            },
+            {
+              "id": "02ea2d3c-9a62-44b8-b007-53ab3f8ba15f",
+              "name": "service",
+              "value": "={{ $json.body.service }}",
+              "type": "string"
+            },
+            {
+              "id": "151a1809-95fd-4788-8dad-32c64134ddfb",
+              "name": "message",
+              "value": "={{ $json.body.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "c0e6d6ce-901d-464d-bfe9-b4447ef20c68",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "const urgentWords = [\n  'urgent',\n  'urgently',\n  'emergency',\n  'stopped working',\n  'not working',\n  'no heat',\n  'no cooling',\n  'leak',\n  'flood',\n  'smoke',\n  'burning',\n  'baby',\n  'elderly'\n];\n\nfor (const item of $input.all()) {\n  const message = (item.json.message || '').toLowerCase();\n\n  const matchedKeywords = urgentWords.filter(word =>\n    message.includes(word)\n  );\n\n  item.json.priority =\n    matchedKeywords.length > 0 ? 'HIGH' : 'NORMAL';\n\n  item.json.priorityReason =\n    matchedKeywords.length > 0\n      ? `Urgent keywords: ${matchedKeywords.join(', ')}`\n      : 'No urgent keywords detected';\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        0
+      ],
+      "id": "4fa17492-7bd6-4a2c-9766-d922ae01dc71",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "02f7f756-c5fd-4046-8605-6faf3feedec8",
+              "leftValue": "={{ $json.priority }}",
+              "rightValue": "HIGH",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        432,
+        0
+      ],
+      "id": "4ed45ae0-0dc5-46fd-813a-7bbfed9b3038",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "837c6111-7087-40aa-934e-73845357f701",
+              "name": "ownerAlert",
+              "value": "=🔥 HIGH PRIORITY LEAD\n\nCustomer: {{ $json.name }}\nPhone: {{ $json.phone }}\nEmail: {{ $json.email }}\nService: {{ $json.service }}\n\nProblem:\n{{ $json.message }}\n\n⚡ Contact customer immediately.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        864,
+        32
+      ],
+      "id": "f884ad78-0dc6-4b51-bb40-95d5b9958d43",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "sendTo": "owner@example.com",
+        "subject": "={{ '🔥 HIGH PRIORITY HVAC LEAD - ' + $('Edit Fields').item.json.name }}",
+        "emailType": "text",
+        "message": "={{ $json.ownerAlert }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1136,
+        -16
+      ],
+      "id": "3de74c10-59a1-431b-9329-fba1a19327c6",
+      "name": "Send a message"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0c567361-8d68-480d-89d7-6e9d1673a1db",
+              "name": "ownerAlert",
+              "value": "=NEW HVAC LEAD\n\nCustomer: {{ $json.name }}\nPhone: {{ $json.phone }}\nEmail: {{ $json.email }}\nService: {{ $json.service }}\n\nProblem:\n{{ $json.message }}\n\nNormal priority.\nContact when available.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        688,
+        256
+      ],
+      "id": "58c55524-6dfb-4bcc-9cf1-b0a901a167f5",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "sendTo": "owner@example.com",
+        "subject": "={{ 'NEW HVAC LEAD - ' + $('Edit Fields').item.json.name }}",
+        "emailType": "text",
+        "message": "={{ $json.ownerAlert }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        864,
+        96
+      ],
+      "id": "4a92f705-21d1-4ca7-882d-aa8f61572d9b",
+      "name": "Send a message1"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "={{ 'We received your ' + $json.service + ' request' }}",
+        "emailType": "text",
+        "message": "=Hi {{ $json.name }},\n\nWe received your request for {{ $json.service }}.\n\nOur team will review your request and contact you as soon as possible.\n\nThank you.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        464,
+        144
+      ],
+      "id": "29d6c58f-aaa1-4578-b8b0-55ded0490d2f",
+      "name": "Send a message2"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_YOUR_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $now.toFormat('yyyy-MM-dd HH:mm:ss') }}",
+            "Name": "={{ $json.name }}",
+            "Phone": "={{ $json.phone }}",
+            "Email": "={{ $json.email }}",
+            "Message": "={{ $json.message }}",
+            "Service": "={{ $json.service }}",
+            "Priority": "={{ $json.priority }}",
+            "Status": "New"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Service",
+              "displayName": "Service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Priority",
+              "displayName": "Priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Message",
+              "displayName": "Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        576,
+        144
+      ],
+      "id": "c10c8493-fd01-4d4e-a4d6-e26046d3f303",
+      "name": "Append row in sheet"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "qwen2.5:3b",
+          "mode": "list",
+          "cachedResultName": "qwen2.5:3b"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are an HVAC lead classification assistant.\n\nAnalyze the customer message and return ONLY valid JSON with these fields:\ncategory, priority, reason.\n\nPriority must be HIGH or NORMAL.\nDo not invent missing information.\n\nCustomer message:\n\"My heating stopped working. I have two small children at home and need help urgently.\"\n\nReturn raw JSON only. Do not use Markdown, code fences or explanations."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.ollama",
+      "typeVersion": 1,
+      "position": [
+        608,
+        -192
+      ],
+      "id": "36ca3a29-a2ca-41ec-b720-c1a2d3979b08",
+      "name": "Message a model"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        448,
+        -192
+      ],
+      "id": "5c7b1790-7008-4a3c-852a-d28cc8c84213",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst results = [];\n\nfor (const item of $input.all()) {\n  const raw = item.json.content;\n  let data;\n  let error = null;\n\n  try {\n    if (typeof raw !== \"string\") {\n      throw new Error(\"AI response is not text\");\n    }\n\n    data = JSON.parse(raw.trim());\n\n    if (!data || typeof data !== \"object\" || Array.isArray(data)) {\n      throw new Error(\"Expected a JSON object\");\n    }\n\n    for (const field of [\"category\", \"priority\", \"reason\"]) {\n      if (\n        typeof data[field] !== \"string\" ||\n        !data[field].trim()\n      ) {\n        throw new Error(\"Invalid or missing field: \" + field);\n      }\n    }\n\n    if (![\"HIGH\", \"NORMAL\"].includes(data.priority)) {\n      throw new Error(\"Invalid priority\");\n    }\n  } catch (e) {\n    error = e.message;\n  }\n\n  results.push({\n    json: {\n      valid: error === null,\n      category: error ? null : data.category,\n      priority: error ? null : data.priority,\n      reason: error ? null : data.reason,\n      error,\n      original_ai_response: raw ?? null\n    }\n  });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -192
+      ],
+      "id": "9bab2098-8a77-476d-b142-cf4669da9b6b",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "528b85de-fd90-4b37-8cd0-ea0380f8cf11",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": "={{ false }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1024,
+        -192
+      ],
+      "id": "762f909a-6674-426b-a2a6-062afcf5a5fc",
+      "name": "If1"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a message2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": [],
+  "tags": []
+}
